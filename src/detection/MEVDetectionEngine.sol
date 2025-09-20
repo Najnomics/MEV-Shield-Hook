@@ -102,6 +102,42 @@ contract MEVDetectionEngine is IMEVDetectionEngine {
     // ============ External Functions ============
 
     /**
+     * @notice Initialize a pool for MEV detection
+     * @param poolKey Pool identifier
+     */
+    function initializePool(PoolKey calldata poolKey) external {
+        PoolId poolId = poolKey.toId();
+        
+        if (poolInitialized[poolId]) {
+            return; // Already initialized
+        }
+        
+        // Initialize pool metrics with default values
+        poolMetrics[poolId] = PoolMetrics({
+            averageSwapSize: FHE.asEuint128(0),
+            averageGasPrice: FHE.asEuint64(50 * 1e9), // Default 50 gwei
+            lastLargeSwapTimestamp: FHE.asEuint32(0),
+            volatilityScore: FHE.asEuint64(0),
+            totalVolume24h: FHE.asEuint128(0)
+        });
+        
+        // Set up FHE permissions
+        FHE.allowThis(poolMetrics[poolId].averageSwapSize);
+        FHE.allowThis(poolMetrics[poolId].averageGasPrice);
+        FHE.allowThis(poolMetrics[poolId].lastLargeSwapTimestamp);
+        FHE.allowThis(poolMetrics[poolId].volatilityScore);
+        FHE.allowThis(poolMetrics[poolId].totalVolume24h);
+        
+        // Set default sensitivity
+        detectionSensitivity[poolId] = DEFAULT_SENSITIVITY;
+        
+        // Mark as initialized
+        poolInitialized[poolId] = true;
+        
+        emit Events.PoolMetricsUpdated(poolId, 1, block.number);
+    }
+
+    /**
      * @inheritdoc IMEVDetectionEngine
      */
     function analyzeSwapThreat(

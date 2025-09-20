@@ -5,7 +5,7 @@ v4-core/=node_modules/@uniswap/v4-core/
 v4-periphery/=node_modules/@uniswap/v4-periphery/
 
 @fhenixprotocol/cofhe-contracts/=node_modules/@fhenixprotocol/cofhe-contracts/
-@fhenixprotocol/cofhe-mock-contracts/=node_modules/@fhenixprotocol/cofhe-mock-contracts/
+@fhenixprotocol/cofhe-mock-contracts/=context/cofhe-mock-contracts/contracts/
 
 @openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/

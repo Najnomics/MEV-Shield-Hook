@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+
 /**
  * @title HookMiner
  * @notice Utility for mining salts to deploy hooks with specific addresses
@@ -23,16 +25,47 @@ library HookMiner {
     ) internal pure returns (address hookAddress, bytes32 salt) {
         bytes memory bytecode = abi.encodePacked(creationCode, constructorArgs);
         
-        for (uint256 i = 0; i < 100000; i++) {
-            salt = keccak256(abi.encodePacked(i));
+        // Mine for a valid salt by brute force
+        uint256 nonce = 0;
+        while (true) {
+            salt = keccak256(abi.encodePacked("hook-salt", nonce));
             hookAddress = computeAddress(deployer, salt, bytecode);
             
-            if (uint160(hookAddress) & uint160(0x7FF) == flags) {
-                return (hookAddress, salt);
+            // Check if the address has the required flags
+            if (uint160(hookAddress) & flags == flags) {
+                break;
             }
+            
+            nonce++;
+            // Prevent infinite loops in case of misconfiguration
+            require(nonce < 100000, "HookMiner: Could not find valid address");
         }
         
-        revert("HookMiner: Could not find salt");
+        return (hookAddress, salt);
+    }
+
+    /**
+     * @notice Create flags from hook permissions
+     * @param permissions The permissions for the hook
+     * @return flags The flags as a uint160
+     */
+    function createFlags(Hooks.Permissions memory permissions) internal pure returns (uint160 flags) {
+        return uint160(
+            (permissions.beforeInitialize ? 1 << 159 : 0) |
+            (permissions.afterInitialize ? 1 << 158 : 0) |
+            (permissions.beforeAddLiquidity ? 1 << 157 : 0) |
+            (permissions.afterAddLiquidity ? 1 << 156 : 0) |
+            (permissions.beforeRemoveLiquidity ? 1 << 155 : 0) |
+            (permissions.afterRemoveLiquidity ? 1 << 154 : 0) |
+            (permissions.beforeSwap ? 1 << 153 : 0) |
+            (permissions.afterSwap ? 1 << 152 : 0) |
+            (permissions.beforeDonate ? 1 << 151 : 0) |
+            (permissions.afterDonate ? 1 << 150 : 0) |
+            (permissions.beforeSwapReturnDelta ? 1 << 149 : 0) |
+            (permissions.afterSwapReturnDelta ? 1 << 148 : 0) |
+            (permissions.afterAddLiquidityReturnDelta ? 1 << 147 : 0) |
+            (permissions.afterRemoveLiquidityReturnDelta ? 1 << 146 : 0)
+        );
     }
     
     /**
